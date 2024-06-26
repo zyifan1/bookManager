@@ -35,12 +35,35 @@ public interface BookService extends IService<Book> {
     /**
      * 删除图书（逻辑删除）
      *
-     * @param user
-     * @param book
-     * @return 是否成功  1--成功
+     * @param bookName
+     * @return
      */
-    public int deleteUser(User user, Book book);
+    public boolean deleteBook(String bookName, String userId);
 
+    /**
+     * 查询所有书籍
+     *
+     * @param userId
+     * @return
+     */
+    public List<Book> getAllBook(String userId);
+
+    /**
+     * 查询所有正在还没有同意借阅的书籍
+     *
+     * @param userId
+     * @return
+     */
+    public List<Book> getAllNotAcceptBook(String userId);
+
+
+    /**
+     * 查询所有被借阅的书籍
+     *
+     * @param userId
+     * @return
+     */
+    public List<Book> QueryAllBorrowBook(String userId);
 
     /**
      * 查询用户借阅的书籍
@@ -53,9 +76,13 @@ public interface BookService extends IService<Book> {
 
     /**
      * 查询未被借阅的书籍
+     *
      * @return
      */
     public List<Book> QueryNotBorrowBook();
+
+
+    public List<Book> QueryAllNotAcceptBook(String userId);
 
 
 }

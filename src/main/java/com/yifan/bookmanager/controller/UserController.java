@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/user")
@@ -44,6 +45,32 @@ public class UserController {
         System.out.println(loginRes);
         return ResultUtils.success(loginRes);
     }
+
+
+    @PostMapping("/adminLogin")
+    public BaseResponse<Long> adminLogin(@RequestBody HashMap<String,String> userAccount){
+        long loginRes = userService.adminLogin(userAccount.get("userAccount"), userAccount.get("password"));
+        System.out.println(loginRes);
+        return ResultUtils.success(loginRes);
+    }
+
+    @GetMapping("/getAllUser")
+    public BaseResponse<List<User>> getAllUser(String userId){
+        List<User> users = userService.getAllUser(userId);
+        for (User user : users) {
+            System.out.println(user);
+        }
+        return ResultUtils.success(users);
+
+    }
+
+    @PostMapping("/acceptBorrow")
+    public BaseResponse<Integer> acceptBorrow(@RequestBody HashMap<String,String> accMap){
+        System.out.println(accMap.get("bookName"));
+        Integer res = userService.acceptBorrowBook(accMap.get("bookName"));
+        return ResultUtils.success(res);
+    }
+
 
 //    @PostMapping("/register")
 //    public BaseResponse<Long> userRegister(String ){

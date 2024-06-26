@@ -13,6 +13,7 @@ import com.yifan.bookmanager.model.entity.User;
 import com.yifan.bookmanager.service.UserService;
 import com.yifan.bookmanager.utils.Secure;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private BookServiceImpl bookService;
+    @Autowired
+    private com.yifan.bookmanager.mapper.bookMapper bookMapper;
 
     @Override
     public long RegisterUser(String userName, String userAccount, String password, String checkPassword) {
@@ -74,13 +77,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptPassword = Secure.md5Encryption(password + SALT);
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userAccount", userAccount)
-                .eq("password", encryptPassword);
+                .eq("password", encryptPassword)
+                .eq("userRole", "user");
         User user = this.baseMapper.selectOne(userQueryWrapper);
         if (BeanUtil.isEmpty(user)) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         return user.getUserId();
     }
+
+    @Override
+    public long adminLogin(String userAccount, String password) {
+        if (StrUtil.hasBlank(userAccount, password)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        //加密
+        String encryptPassword = Secure.md5Encryption(password + SALT);
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq("userAccount", userAccount)
+                .eq("password", encryptPassword)
+                .eq("userRole", "admin");
+        User user = this.baseMapper.selectOne(userQueryWrapper);
+        if (BeanUtil.isEmpty(user)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        return user.getUserId();
+    }
+
 
     @Override
     public User getUserInfo(String userId) {
@@ -90,6 +113,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userId", userId);
         return this.baseMapper.selectOne(userQueryWrapper);
+    }
+
+    @Override
+    public List<User> getAllUser(String userId) {
+        if (StrUtil.hasBlank(userId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        isAdmin(userId);
+
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        return this.baseMapper.selectList(userQueryWrapper);
     }
 
     @Override
@@ -152,14 +186,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "图书不存在");
         }
 
+        //逻辑
         Long bookId = book.getBookId();
+        //向借阅表中插入记录，并将状态修改成审批中
         int insertRes = this.baseMapper.borrowBook(Long.parseLong(userId), bookId);
-
         if (insertRes <= 0) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "借阅失败");
         }
+        //将图书表中的该图书的状态修改成审批中
+        int updateRes = this.baseMapper.updateBorrowStateToAccept(bookId);
+        if (updateRes <= 0) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "借阅失败");
+        }
 
-        return this.baseMapper.updateBorrowStateInt(bookId);
+        return updateRes;
+//        return this.baseMapper.updateBorrowStateInt(bookId);
+    }
+
+    @Override
+    public Integer acceptBorrowBook(String bookName) {
+        if (StrUtil.isBlank(bookName)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        System.out.println("the bookName is " + bookName);
+        //通过书名获取图书
+        Book book = this.baseMapper.getBookByBookName(bookName);
+//        QueryWrapper<Book> bookQueryWrapper = new QueryWrapper<>();
+//        bookQueryWrapper.eq("bookName",bookName);
+//        Book book = bookMapper.selectOne(bookQueryWrapper);
+        System.out.println(book);
+        if (book.getBookId() <= 0) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "该图书不存在");
+        }
+        //将借阅表中该图书的状态改成已借阅
+        this.baseMapper.acceptBorrow(book.getBookId());
+        //将图书表中的该书的状态改成已借阅
+        return this.baseMapper.updateBorrowStateInt(book.getBookId());
     }
 
     @Override
@@ -189,6 +251,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         return this.baseMapper.updateBorrowState(bookId);
+    }
+
+
+    public boolean isAdmin(String userId) {
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq("userId", userId);
+        List<User> users = this.baseMapper.selectList(userQueryWrapper);
+        if (users.isEmpty()) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        return true;
     }
 
 

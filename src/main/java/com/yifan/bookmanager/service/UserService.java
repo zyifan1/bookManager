@@ -3,6 +3,8 @@ package com.yifan.bookmanager.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yifan.bookmanager.model.entity.User;
 
+import java.util.List;
+
 public interface UserService extends IService<User> {
 
     /**
@@ -18,17 +20,36 @@ public interface UserService extends IService<User> {
 
     /**
      * 登录
+     *
      * @param userAccount
      * @param password
      */
-    public long login(String userAccount,String password);
+    public long login(String userAccount, String password);
+
+    /**
+     * 管理员登录
+     *
+     * @param userAccount
+     * @param password
+     * @return
+     */
+    public long adminLogin(String userAccount, String password);
 
     /**
      * 获取用户信息
+     *
      * @param userId
      * @return
      */
     public User getUserInfo(String userId);
+
+    /**
+     * 获取所有用户信息
+     *
+     * @param userId
+     * @return
+     */
+    public List<User> getAllUser(String userId);
 
     /**
      * 修改密码
@@ -59,12 +80,21 @@ public interface UserService extends IService<User> {
      */
     public Integer borrowBook(String userId, String bookName);
 
+
+    /**
+     * 同意书籍借阅
+     * @param bookName
+     * @return
+     */
+    public Integer acceptBorrowBook(String bookName);
+
     /**
      * 还书
+     *
      * @param userId
      * @param bookName
      * @return
      */
-    public Integer returnBook(String userId,String bookName);
+    public Integer returnBook(String userId, String bookName);
 
 }

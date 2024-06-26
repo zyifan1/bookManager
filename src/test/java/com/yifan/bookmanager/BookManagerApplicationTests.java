@@ -44,4 +44,10 @@ class BookManagerApplicationTests {
     }
 
 
+    @Test
+    void adminLogin(){
+        System.out.println(userService.adminLogin("admin", "admin"));
+    }
+
+
 }
